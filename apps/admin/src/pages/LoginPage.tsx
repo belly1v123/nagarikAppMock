@@ -106,7 +106,7 @@ export const LoginPage: React.FC = () => {
 
                     <div className="mt-6 pt-6 border-t border-gray-200">
                         <p className="text-sm text-gray-500 text-center">
-                            Default credentials: <code className="bg-gray-100 px-1 rounded">admin</code> / <code className="bg-gray-100 px-1 rounded">admin123</code>
+                            Default credentials: <code className="bg-gray-100 px-1 rounded">admin</code> / <code className="bg-gray-100 px-1 rounded">Admin@123</code>
                         </p>
                     </div>
                 </div>

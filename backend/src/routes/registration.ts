@@ -136,9 +136,14 @@ router.post(
         // 6. Return success response
         res.status(201).json({
             success: true,
-            citizenId: result.citizenId,
-            citizenshipHash: result.citizenshipHash,
-            isVoterEligible: result.isVoterEligible,
+            data: {
+                citizenId: result.citizenId,
+                fullName,
+                citizenshipNumber,
+                citizenshipHash: result.citizenshipHash,
+                isVoterEligible: result.isVoterEligible,
+                registeredAt: new Date().toISOString(),
+            },
             message: 'Registration successful',
         });
     })

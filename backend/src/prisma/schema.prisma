@@ -1,0 +1,126 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model CitizenRecord {
+  id                    String    @id @default(uuid())
+
+  // Personal Information (encrypted at rest)
+  fullName              String    // AES-256 encrypted
+  citizenshipNumber     String    @unique  // AES-256 encrypted
+  citizenshipHash       String    @unique  // SHA256(citizenshipNumber + salt)
+  dateOfBirth           String    // AES-256 encrypted (stored as string)
+  gender                String
+  district              String
+  municipality          String
+  wardNumber            String
+  address               String?
+
+  // Contact
+  phoneNumber           String    @unique  // AES-256 encrypted
+  phoneHash             String    @unique  // SHA256(phone + salt)
+  email                 String?
+
+  // Face Descriptors (128-dimension Float32Array stored as JSON)
+  faceDescriptorFront   Json      // number[128]
+  faceDescriptorLeft    Json      // number[128]
+  faceDescriptorRight   Json      // number[128]
+
+  // Face Images (optional - stored as S3 URL or null)
+  // Raw images NOT stored by default (privacy)
+  // Only stored if STORE_FACE_IMAGES=true in env
+  faceImageFrontUrl     String?
+  faceImageLeftUrl      String?
+  faceImageRightUrl     String?
+
+  // Eligibility
+  isVoterEligible       Boolean   @default(false)
+  eligibilityReason     String?   // reason if not eligible
+
+  // Status flags
+  isActive              Boolean   @default(true)
+  isFlagged             Boolean   @default(false)
+  flagReason            String?
+
+  // Timestamps
+  registeredAt          DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  verificationLogs      VerificationLog[]
+  auditLogs             AuditLog[]
+
+  @@index([phoneHash])
+  @@index([citizenshipHash])
+}
+
+model VerificationLog {
+  id                String   @id @default(uuid())
+  citizenId         String
+  citizen           CitizenRecord @relation(fields: [citizenId], references: [id])
+
+  // Verification details
+  requestedBy       String   // API key ID of requesting app
+  verificationType  String   // "identity" | "liveness" | "full"
+  result            Boolean  // passed or failed
+  matchScore        Float    // best match distance (lower = better)
+  matchAngle        String   // "front" | "left" | "right"
+  livenessResult    Boolean?
+  livenessChallenge String?  // "blink" | "smile" | "turn_left" | "turn_right"
+  proofToken        String?  // issued proof token hash
+
+  // Request metadata
+  ipAddress         String?
+  userAgent         String?
+  requestedAt       DateTime @default(now())
+
+  @@index([citizenId])
+  @@index([requestedBy])
+}
+
+model ApiKey {
+  id            String   @id @default(uuid())
+  name          String   // e.g., "Nepal Voting Platform"
+  keyHash       String   @unique  // SHA256 of actual key
+  keyPrefix     String   // first 8 chars for display (e.g., "nag_live_")
+  isActive      Boolean  @default(true)
+  permissions   Json     // { verify_identity: true, check_liveness: true }
+  rateLimit     Int      @default(100)  // requests per hour
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime?
+  lastUsedAt    DateTime?
+
+  @@index([keyHash])
+}
+
+model Admin {
+  id            String   @id @default(uuid())
+  username      String   @unique
+  passwordHash  String
+  role          String   @default("admin")  // "admin" | "superadmin"
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  lastLoginAt   DateTime?
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String   // "register" | "verify" | "duplicate_detected" | "flag"
+  citizenId   String?
+  citizen     CitizenRecord? @relation(fields: [citizenId], references: [id])
+  performedBy String?  // admin ID or API key ID
+  details     Json?    // additional context
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
+}

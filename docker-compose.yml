@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: nagarik_postgres
+    environment:
+      POSTGRES_USER: nagarik_user
+      POSTGRES_PASSWORD: nagarik_password
+      POSTGRES_DB: nagarik_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nagarik_user -d nagarik_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: nagarik_backend
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://nagarik_user:nagarik_password@postgres:5432/nagarik_db
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-32-character-encryption-key!!}
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Frontend (Production build served by nginx)
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    container_name: nagarik_frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Admin Dashboard (Production build served by nginx)
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    container_name: nagarik_admin
+    ports:
+      - "5174:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

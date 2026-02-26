@@ -237,7 +237,7 @@ export async function listCitizens(params: {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: Prisma.CitizenRecordWhereInput = {};
+    const where: any = {};
 
     if (params.district) {
         where.district = params.district;
@@ -272,12 +272,14 @@ export async function listCitizens(params: {
         return {
             id: decrypted.id,
             fullName: decrypted.fullName,
+            citizenshipNumber: decrypted.citizenshipNumber,
             citizenshipHash: decrypted.citizenshipHash,
             district: decrypted.district,
             isVoterEligible: decrypted.isVoterEligible,
             isActive: decrypted.isActive,
             isFlagged: decrypted.isFlagged,
             registeredAt: decrypted.registeredAt,
+            createdAt: decrypted.registeredAt, // Alias for frontend compatibility
         };
     });
 

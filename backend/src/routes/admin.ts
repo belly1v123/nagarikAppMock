@@ -171,15 +171,24 @@ router.get(
         }));
 
         res.json({
-            totalCitizens,
-            voterEligibleCount,
-            activeCitizenCount,
-            verificationsToday: todayVerifications,
-            duplicatesBlocked,
-            activeApiKeys,
-            registrationsPerDay,
-            verificationsPerHour,
-            districtDistribution,
+            success: true,
+            data: {
+                totalCitizens,
+                totalVerifications: todayVerifications,
+                verificationsByResult: {
+                    match: 0, // TODO: Calculate from verificationLog
+                    noMatch: 0,
+                    error: 0,
+                },
+                recentRegistrations: activeCitizenCount,
+                voterEligibleCount,
+                activeCitizenCount,
+                duplicatesBlocked,
+                activeApiKeys,
+                registrationsPerDay,
+                verificationsPerHour,
+                districtDistribution,
+            },
         });
     })
 );
@@ -204,11 +213,11 @@ router.get(
         });
 
         res.json({
-            data: result.citizens,
-            pagination: {
-                page: result.page,
-                limit: limit ? parseInt(limit as string, 10) : 20,
+            success: true,
+            data: {
+                citizens: result.citizens,
                 total: result.total,
+                page: result.page,
                 totalPages: result.totalPages,
             },
         });

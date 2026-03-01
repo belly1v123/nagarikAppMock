@@ -112,7 +112,7 @@ export async function registerCitizen(data: CitizenRegistrationData): Promise<{
             municipality: data.municipality,
             wardNumber: data.wardNumber.toString(),
             address: data.address,
-            phoneNumber: encryptedPII.phoneNumber,
+            phoneNumber: normalizedPhone,  // Store plain phone with +977 prefix
             phoneHash,
             email: data.email,
             faceDescriptorFront: data.faceDescriptors.front,
@@ -423,7 +423,7 @@ function decryptCitizenRecord(citizen: {
         fullName: citizen.fullName,
         citizenshipNumber: citizen.citizenshipNumber,
         dateOfBirth: citizen.dateOfBirth,
-        phoneNumber: citizen.phoneNumber,
+        phoneNumber: citizen.phoneNumber,  // Phone is now stored plain, but we pass it through for interface compatibility
     });
 
     return {
@@ -437,7 +437,7 @@ function decryptCitizenRecord(citizen: {
         municipality: citizen.municipality,
         wardNumber: citizen.wardNumber,
         address: citizen.address || undefined,
-        phoneNumber: decryptedPII.phoneNumber,
+        phoneNumber: citizen.phoneNumber,  // Plain phone number with +977 prefix
         phoneHash: citizen.phoneHash,
         email: citizen.email || undefined,
         isVoterEligible: citizen.isVoterEligible,

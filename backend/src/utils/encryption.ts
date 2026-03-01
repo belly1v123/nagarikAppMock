@@ -81,7 +81,7 @@ export function encryptCitizenPII(data: CitizenPII): EncryptedCitizenPII {
         fullName: encrypt(data.fullName),
         citizenshipNumber: encrypt(data.citizenshipNumber),
         dateOfBirth: encrypt(data.dateOfBirth),
-        phoneNumber: encrypt(data.phoneNumber),
+        phoneNumber: data.phoneNumber,  // Phone stored as plain text with +977 prefix
     };
 }
 
@@ -90,7 +90,7 @@ export function decryptCitizenPII(data: EncryptedCitizenPII): CitizenPII {
         fullName: decrypt(data.fullName),
         citizenshipNumber: decrypt(data.citizenshipNumber),
         dateOfBirth: decrypt(data.dateOfBirth),
-        phoneNumber: decrypt(data.phoneNumber),
+        phoneNumber: data.phoneNumber,  // Phone is already plain text
     };
 }
 

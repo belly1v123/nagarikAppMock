@@ -62,6 +62,7 @@ export function getApiKeyPrefix(key: string): string {
  * Removes spaces, dashes, and ensures +977 prefix
  */
 export function normalizePhoneNumber(phone: string): string {
+    console.log(phone);
     // Remove all non-digit characters except +
     let normalized = phone.replace(/[^\d+]/g, '');
 

@@ -21,7 +21,7 @@ export const config = {
     // Server configuration
     port: parseInt(process.env.PORT || '3001', 10),
     nodeEnv: process.env.NODE_ENV || 'development',
-    allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:5174').split(','),
+    allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:3000').split(','),
 
     // Database
     databaseUrl: process.env.DATABASE_URL || 'postgresql://nagarik:password@localhost:5432/nagarik_mock',

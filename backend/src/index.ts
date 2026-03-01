@@ -11,7 +11,7 @@ import morgan from 'morgan';
 import { config } from './config';
 import { logger } from './utils/logger';
 import { generalLimiter, errorHandler, notFoundHandler } from './middleware';
-import { registrationRoutes, verificationRoutes, adminRoutes, healthRoutes } from './routes';
+import { registrationRoutes, verificationRoutes, adminRoutes, healthRoutes, authRoutes } from './routes';
 
 // Create Express app
 const app: Application = express();
@@ -27,7 +27,25 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-    origin: config.allowedOrigins,
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+
+        // Check against allowed origins
+        if (config.allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        // Also allow if origin ends with allowed port
+        const allowedPorts = ['3000', '3001', '5173', '5174'];
+        const originPort = origin.split(':').pop();
+        if (originPort && allowedPorts.includes(originPort)) {
+            return callback(null, true);
+        }
+
+        logger.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
@@ -80,6 +98,9 @@ app.use('/api/verify', verificationRoutes);
 
 // Admin routes
 app.use('/api/admin', adminRoutes);
+
+// Auth routes (for third-party identity verification)
+app.use('/api/auth', authRoutes);
 
 // ═══════════════════════════════════════════════════════════════
 // ERROR HANDLING

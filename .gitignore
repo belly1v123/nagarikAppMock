@@ -1,16 +1,25 @@
 # Dependencies
 node_modules/
 .pnpm-store/
+.turbo/
 
 # Build outputs
 dist/
 build/
 .next/
+out/
+coverage/
+.nyc_output/
 
 # Environment files
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.test
+!.env.example
+!**/.env.example
 
 # IDE
 .vscode/
@@ -27,10 +36,8 @@ logs/
 *.log
 npm-debug.log*
 pnpm-debug.log*
-
-# Testing
-coverage/
-.nyc_output/
+yarn-debug.log*
+yarn-error.log*
 
 # Prisma
 prisma/migrations/.migration_lock.toml
@@ -41,3 +48,6 @@ docker-compose.override.yml
 # Misc
 *.tsbuildinfo
 .eslintcache
+.cache/
+.vercel/
+.DS_Store?

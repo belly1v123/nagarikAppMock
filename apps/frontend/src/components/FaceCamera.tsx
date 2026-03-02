@@ -20,6 +20,8 @@ interface FaceCameraProps {
         isFaceDetected: boolean;
         confidence: number;
         nosePosition: { x: number; y: number } | null;
+        isCaptureReady?: boolean;
+        qualityMessage?: string;
     };
     onCapture?: () => void;
     width?: number;
@@ -60,6 +62,10 @@ export const FaceCamera: React.FC<FaceCameraProps> = ({
         if (!ctx) return;
 
         ctx.clearRect(0, 0, width, height);
+
+        if (!detectionStatus.isFaceDetected) {
+            return;
+        }
 
         // Draw nose position indicator if face detected
         if (detectionStatus.isFaceDetected && detectionStatus.nosePosition) {
@@ -112,6 +118,9 @@ export const FaceCamera: React.FC<FaceCameraProps> = ({
             if (!detectionStatus?.isFaceDetected) {
                 return 'Position your face in the oval';
             }
+            if (detectionStatus.qualityMessage) {
+                return detectionStatus.qualityMessage;
+            }
             return ANGLE_INSTRUCTIONS[currentAngle];
         }
         return 'Preparing camera...';
@@ -119,7 +128,7 @@ export const FaceCamera: React.FC<FaceCameraProps> = ({
 
     const isSuccess =
         captureState === 'completed' ||
-        (detectionStatus?.isFaceDetected && (detectionStatus?.confidence ?? 0) > 0.85);
+        (detectionStatus?.isFaceDetected && !!detectionStatus?.isCaptureReady);
 
     return (
         <div

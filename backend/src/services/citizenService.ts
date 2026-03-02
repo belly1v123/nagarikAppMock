@@ -4,7 +4,7 @@
  * Handles citizen CRUD operations with encryption/decryption of PII.
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { hashValue, normalizePhoneNumber, normalizeCitizenshipNumber } from '../utils/hash';
 import { encryptCitizenPII, decryptCitizenPII } from '../utils/encryption';
 import { StoredDescriptors } from './faceMatchService';
@@ -300,6 +300,43 @@ export async function listCitizens(params: {
 }
 
 /**
+ * Delete a citizen permanently
+ */
+export async function deleteCitizen(
+    citizenId: string,
+    performedBy?: string
+): Promise<void> {
+    // Delete related records first
+    await prisma.verificationLog.deleteMany({
+        where: { citizenId },
+    });
+
+    await prisma.auditLog.deleteMany({
+        where: { citizenId },
+    });
+
+    // Delete the citizen record
+    await prisma.citizenRecord.delete({
+        where: { id: citizenId },
+    });
+
+    // Create final audit log for deletion (citizenId is null since record is deleted)
+    await prisma.auditLog.create({
+        data: {
+            action: 'delete',
+            citizenId: null,
+            performedBy,
+            details: { deletedCitizenId: citizenId, deletedAt: new Date().toISOString() },
+        },
+    });
+
+    logger.info('Citizen deleted permanently', {
+        citizenId: citizenId.slice(0, 8) + '...',
+        performedBy,
+    });
+}
+
+/**
  * Flag/unflag a citizen
  */
 export async function flagCitizen(
@@ -457,6 +494,7 @@ export const citizenService = {
     getCitizenById,
     getCitizenWithDescriptors,
     listCitizens,
+    deleteCitizen,
     flagCitizen,
     updateCitizenStatus,
     getCitizenStatus,

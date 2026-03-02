@@ -37,6 +37,13 @@ export const config = {
     faceMatchThreshold: parseFloat(process.env.FACE_MATCH_THRESHOLD || '0.50'),
     faceDuplicateThreshold: parseFloat(process.env.FACE_DUPLICATE_THRESHOLD || '0.45'),
     faceHighConfidenceThreshold: parseFloat(process.env.FACE_HIGH_CONFIDENCE_THRESHOLD || '0.40'),
+    faceMinCosineSimilarity: parseFloat(process.env.FACE_MIN_COSINE_SIMILARITY || '0.87'),
+    faceSideAngleAllowance: parseFloat(process.env.FACE_SIDE_ANGLE_ALLOWANCE || '0.08'),
+    faceAmbiguousDistanceMargin: parseFloat(process.env.FACE_AMBIGUOUS_DISTANCE_MARGIN || '0.03'),
+    faceDescriptorNormMin: parseFloat(process.env.FACE_DESCRIPTOR_NORM_MIN || '0.45'),
+    faceDescriptorNormMax: parseFloat(process.env.FACE_DESCRIPTOR_NORM_MAX || '2.80'),
+    faceDescriptorVarianceMin: parseFloat(process.env.FACE_DESCRIPTOR_VARIANCE_MIN || '0.0002'),
+    faceConsistencyThreshold: parseFloat(process.env.FACE_CONSISTENCY_THRESHOLD || '0.72'),
 
     // Storage
     storeFaceImages: process.env.STORE_FACE_IMAGES === 'true',

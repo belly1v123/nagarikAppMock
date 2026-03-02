@@ -18,7 +18,7 @@ import {
     ApiError,
     adminLoginLimiter,
 } from '../middleware';
-import { listCitizens, getCitizenById, flagCitizen } from '../services/citizenService';
+import { listCitizens, getCitizenById, flagCitizen, deleteCitizen } from '../services/citizenService';
 import { createApiKey, listApiKeys, revokeApiKey } from '../services/apiKeyService';
 import { logger, auditLogger } from '../utils/logger';
 
@@ -249,6 +249,25 @@ router.get(
         res.json({
             citizen,
             verificationLogs,
+        });
+    })
+);
+
+// ═══════════════════════════════════════════════════════════════
+// DELETE /api/admin/citizens/:id
+// ═══════════════════════════════════════════════════════════════
+router.delete(
+    '/citizens/:id',
+    adminAuth(),
+    asyncHandler(async (req: Request, res: Response) => {
+        const { id } = req.params;
+        const admin = req.admin!;
+
+        await deleteCitizen(id, admin.id);
+
+        res.json({
+            success: true,
+            message: 'Citizen deleted successfully',
         });
     })
 );

@@ -7,7 +7,6 @@
 
 import { Router, Request, Response, IRouter } from 'express';
 import { z } from 'zod';
-import crypto from 'crypto';
 import { findCitizenByPhone } from '../services/citizenService';
 import { asyncHandler, ApiError, validate, apiKeyAuth } from '../middleware';
 import { logger } from '../utils/logger';

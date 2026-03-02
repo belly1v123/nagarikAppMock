@@ -7,7 +7,7 @@
  * 3. Confirmation & Success
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     CitizenForm,
     FaceCamera,
@@ -20,6 +20,7 @@ import {
 } from '../components';
 import { useFaceApi, useCamera, useFaceCapture } from '../hooks';
 import { registerCitizen, ApiError } from '../api';
+import { estimateHeadPose } from '../utils/poseDetection';
 import type {
     CitizenRegistrationInput,
     FaceDescriptor128,
@@ -38,6 +39,10 @@ interface DetectionStatus {
     isFaceDetected: boolean;
     confidence: number;
     nosePosition: { x: number; y: number } | null;
+    isCaptureReady: boolean;
+    qualityMessage: string;
+    blurScore: number;
+    brightness: number;
 }
 
 interface RegistrationState {
@@ -58,6 +63,10 @@ interface RegistrationState {
 }
 
 const CAPTURE_ANGLES: CaptureAngle[] = ['front', 'left', 'right'];
+const MIN_DETECTION_CONFIDENCE = 0.65;
+const MIN_BLUR_SCORE = 85;
+const MIN_BRIGHTNESS = 55;
+const MAX_BRIGHTNESS = 205;
 
 export const RegistrationPage: React.FC = () => {
     // Face API setup
@@ -87,8 +96,13 @@ export const RegistrationPage: React.FC = () => {
         isFaceDetected: false,
         confidence: 0,
         nosePosition: null,
+        isCaptureReady: false,
+        qualityMessage: 'Position your face in the oval',
+        blurScore: 0,
+        brightness: 0,
     });
     const [isProcessing, setIsProcessing] = useState(false);
+    const analysisCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
     const currentAngle = CAPTURE_ANGLES[currentAngleIndex];
     const completedAngles = state.capturedFaces.map(f => f.angle);
@@ -106,25 +120,169 @@ export const RegistrationPage: React.FC = () => {
         };
     }, [state.step, isFaceApiLoaded, cameraReady, startCamera, stopCamera]);
 
-    // Check capture conditions based on angle (relaxed for better UX)
-    const checkCaptureConditions = useCallback((
+    const computeBrightness = useCallback((imageData: ImageData, step: number = 2): number => {
+        const { data, width, height } = imageData;
+        let luminanceSum = 0;
+        let count = 0;
+
+        for (let y = 0; y < height; y += step) {
+            for (let x = 0; x < width; x += step) {
+                const idx = (y * width + x) * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+                luminanceSum += (0.299 * r) + (0.587 * g) + (0.114 * b);
+                count++;
+            }
+        }
+
+        return count > 0 ? luminanceSum / count : 0;
+    }, []);
+
+    const computeBlurScore = useCallback((imageData: ImageData, step: number = 2): number => {
+        const { data, width, height } = imageData;
+        const gray = new Float32Array(width * height);
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const idx = (y * width + x) * 4;
+                gray[y * width + x] = (0.299 * data[idx]) + (0.587 * data[idx + 1]) + (0.114 * data[idx + 2]);
+            }
+        }
+
+        let sum = 0;
+        let sumSq = 0;
+        let count = 0;
+
+        for (let y = 1; y < height - 1; y += step) {
+            for (let x = 1; x < width - 1; x += step) {
+                const center = gray[y * width + x];
+                const laplacian =
+                    (4 * center) -
+                    gray[y * width + (x - 1)] -
+                    gray[y * width + (x + 1)] -
+                    gray[(y - 1) * width + x] -
+                    gray[(y + 1) * width + x];
+
+                sum += laplacian;
+                sumSq += laplacian * laplacian;
+                count++;
+            }
+        }
+
+        if (count === 0) return 0;
+        const mean = sum / count;
+        return (sumSq / count) - (mean * mean);
+    }, []);
+
+    const evaluateCaptureQuality = useCallback((
         angle: CaptureAngle,
         confidence: number,
-        noseX: number
-    ): boolean => {
-        if (confidence < 0.6) return false;
+        videoWidth: number,
+        videoHeight: number,
+        noseX: number,
+        noseY: number,
+        pose: { yaw: number; pitch: number; roll: number },
+        faceBox?: { x: number; y: number; width: number; height: number }
+    ): { isReady: boolean; reason: string; blurScore: number; brightness: number } => {
+        const confidenceOk = confidence >= MIN_DETECTION_CONFIDENCE;
 
-        switch (angle) {
-            case 'front':
-                return noseX > 0.35 && noseX < 0.65 && confidence > 0.7;
-            case 'left':
-                return noseX < 0.45 && confidence > 0.6;
-            case 'right':
-                return noseX > 0.55 && confidence > 0.6;
-            default:
-                return false;
+        let positionOk = false;
+        if (faceBox) {
+            const centerX = (faceBox.x + faceBox.width / 2) / videoWidth;
+            const centerY = (faceBox.y + faceBox.height / 2) / videoHeight;
+            const areaRatio = (faceBox.width * faceBox.height) / (videoWidth * videoHeight);
+            positionOk =
+                centerX > 0.28 && centerX < 0.72 &&
+                centerY > 0.24 && centerY < 0.76 &&
+                areaRatio > 0.10 && areaRatio < 0.58;
+        } else {
+            positionOk = noseX > 0.25 && noseX < 0.75 && noseY > 0.20 && noseY < 0.82;
         }
-    }, []);
+
+        const angleOk = (() => {
+            if (Math.abs(pose.pitch) > 22 || Math.abs(pose.roll) > 18) return false;
+
+            switch (angle) {
+                case 'front':
+                    return Math.abs(pose.yaw) <= 12;
+                case 'left':
+                    return pose.yaw <= -10 && pose.yaw >= -50;
+                case 'right':
+                    return pose.yaw >= 10 && pose.yaw <= 50;
+                default:
+                    return false;
+            }
+        })();
+
+        let brightness = 0;
+        let blurScore = 0;
+        const video = videoRef.current;
+
+        if (video && faceBox) {
+            if (!analysisCanvasRef.current) {
+                analysisCanvasRef.current = document.createElement('canvas');
+            }
+
+            const analysisCanvas = analysisCanvasRef.current;
+            analysisCanvas.width = videoWidth;
+            analysisCanvas.height = videoHeight;
+            const analysisCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
+
+            if (analysisCtx) {
+                analysisCtx.drawImage(video, 0, 0, videoWidth, videoHeight);
+
+                const padX = faceBox.width * 0.12;
+                const padY = faceBox.height * 0.18;
+                const roiX = Math.max(0, Math.floor(faceBox.x - padX));
+                const roiY = Math.max(0, Math.floor(faceBox.y - padY));
+                const roiW = Math.max(32, Math.min(videoWidth - roiX, Math.floor(faceBox.width + (padX * 2))));
+                const roiH = Math.max(32, Math.min(videoHeight - roiY, Math.floor(faceBox.height + (padY * 2))));
+
+                const roiImageData = analysisCtx.getImageData(roiX, roiY, roiW, roiH);
+                brightness = computeBrightness(roiImageData, 2);
+                blurScore = computeBlurScore(roiImageData, 2);
+            }
+        }
+
+        const lightingOk = brightness >= MIN_BRIGHTNESS && brightness <= MAX_BRIGHTNESS;
+        const blurOk = blurScore >= MIN_BLUR_SCORE;
+        if (!confidenceOk) {
+            return { isReady: false, reason: 'Face confidence too low. Move closer and keep still.', blurScore, brightness };
+        }
+        if (!lightingOk) {
+            return {
+                isReady: false,
+                reason: brightness < MIN_BRIGHTNESS
+                    ? 'Lighting is too low. Move to brighter light.'
+                    : 'Lighting is too harsh. Reduce direct light/glare.',
+                blurScore,
+                brightness,
+            };
+        }
+        if (!blurOk) {
+            return { isReady: false, reason: 'Image appears blurry. Hold device steady and avoid motion.', blurScore, brightness };
+        }
+        if (!positionOk) {
+            return { isReady: false, reason: 'Face is not centered or size is not correct in frame.', blurScore, brightness };
+        }
+        if (!angleOk) {
+            if (angle === 'front') {
+                return { isReady: false, reason: 'Look straight at the camera for front capture.', blurScore, brightness };
+            }
+            if (angle === 'left') {
+                return { isReady: false, reason: 'Turn your head slightly to the LEFT.', blurScore, brightness };
+            }
+            return { isReady: false, reason: 'Turn your head slightly to the RIGHT.', blurScore, brightness };
+        }
+
+        return {
+            isReady: true,
+            reason: 'Good position. Hold still for capture.',
+            blurScore,
+            brightness,
+        };
+    }, [computeBlurScore, computeBrightness, videoRef]);
 
     // Face detection loop
     useEffect(() => {
@@ -145,20 +303,27 @@ export const RegistrationPage: React.FC = () => {
 
                 if (detection.detected && detection.landmarks && detection.descriptor) {
                     const videoWidth = videoRef.current.videoWidth;
+                    const videoHeight = videoRef.current.videoHeight;
 
                     // Get actual nose position from landmarks (index 30 is nose tip)
                     const noseTip = detection.landmarks.positions[30];
                     const noseX = noseTip.x / videoWidth;
                     const confidence = detection.confidence;
 
-                    setDetectionStatus({
-                        isFaceDetected: true,
-                        confidence: confidence,
-                        nosePosition: { x: noseX, y: noseTip.y / videoRef.current.videoHeight },
-                    });
+                    const pose = estimateHeadPose(detection.landmarks);
+                    const quality = evaluateCaptureQuality(
+                        currentAngle,
+                        confidence,
+                        videoWidth,
+                        videoHeight,
+                        noseX,
+                        noseTip.y / videoHeight,
+                        pose,
+                        detection.boundingBox
+                    );
 
                     // Check auto-capture conditions
-                    const shouldCapture = checkCaptureConditions(currentAngle, confidence, noseX);
+                    const shouldCapture = quality.isReady;
 
                     if (shouldCapture) {
                         captureHoldFrames++;
@@ -188,11 +353,25 @@ export const RegistrationPage: React.FC = () => {
                     } else {
                         captureHoldFrames = 0;
                     }
+
+                    setDetectionStatus({
+                        isFaceDetected: true,
+                        confidence,
+                        nosePosition: { x: noseX, y: noseTip.y / videoHeight },
+                        isCaptureReady: quality.isReady,
+                        qualityMessage: quality.reason,
+                        blurScore: quality.blurScore,
+                        brightness: quality.brightness,
+                    });
                 } else {
                     setDetectionStatus({
                         isFaceDetected: false,
                         confidence: 0,
                         nosePosition: null,
+                        isCaptureReady: false,
+                        qualityMessage: 'Position your face in the oval',
+                        blurScore: 0,
+                        brightness: 0,
                     });
                     captureHoldFrames = 0;
                 }
@@ -213,7 +392,7 @@ export const RegistrationPage: React.FC = () => {
                 cancelAnimationFrame(animationId);
             }
         };
-    }, [state.step, cameraReady, isFaceApiLoaded, currentAngle, currentAngleIndex, detectFace, checkCaptureConditions, takeSnapshot, videoRef]);
+    }, [state.step, cameraReady, isFaceApiLoaded, currentAngle, currentAngleIndex, detectFace, evaluateCaptureQuality, takeSnapshot, videoRef]);
 
     // Check if all angles captured
     useEffect(() => {
@@ -323,6 +502,11 @@ export const RegistrationPage: React.FC = () => {
     // Manual capture function
     const handleManualCapture = async () => {
         if (!videoRef.current || !cameraReady || !isFaceApiLoaded) return;
+
+        if (!detectionStatus.isCaptureReady) {
+            alert(detectionStatus.qualityMessage);
+            return;
+        }
 
         try {
             const detection = await detectFace(videoRef.current);
@@ -434,10 +618,12 @@ export const RegistrationPage: React.FC = () => {
                         <div className="flex justify-center gap-4 mb-6">
                             <button
                                 onClick={handleManualCapture}
-                                disabled={!detectionStatus.isFaceDetected}
+                                disabled={!detectionStatus.isFaceDetected || !detectionStatus.isCaptureReady}
                                 className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                             >
-                                {detectionStatus.isFaceDetected ? `Capture ${currentAngle} view` : 'Position face to capture'}
+                                {detectionStatus.isFaceDetected
+                                    ? (detectionStatus.isCaptureReady ? `Capture ${currentAngle} view` : 'Improve frame quality')
+                                    : 'Position face to capture'}
                             </button>
                         </div>
 
@@ -449,9 +635,14 @@ export const RegistrationPage: React.FC = () => {
                                 {currentAngle === 'right' && 'Turn your head slightly to the RIGHT'}
                             </p>
                             {detectionStatus.isFaceDetected && (
-                                <p className="text-xs text-green-600 mt-1">
-                                    Face detected (confidence: {Math.round(detectionStatus.confidence * 100)}%)
-                                </p>
+                                <>
+                                    <p className={`text-xs mt-1 ${detectionStatus.isCaptureReady ? 'text-green-600' : 'text-amber-600'}`}>
+                                        {detectionStatus.qualityMessage}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Confidence: {Math.round(detectionStatus.confidence * 100)}% · Blur: {Math.round(detectionStatus.blurScore)} · Light: {Math.round(detectionStatus.brightness)}
+                                    </p>
+                                </>
                             )}
                         </div>
 

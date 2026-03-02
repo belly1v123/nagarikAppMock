@@ -16,18 +16,27 @@ interface CapturedImagesProps {
     images: CapturedImage[];
     onRemove?: (angle: CaptureAngle) => void;
     size?: 'sm' | 'md' | 'lg';
+    locale?: 'en' | 'ne';
 }
 
-const ANGLE_LABELS: Record<CaptureAngle, string> = {
-    front: 'Front',
-    left: 'Left',
-    right: 'Right',
+const ANGLE_LABELS: Record<'en' | 'ne', Record<CaptureAngle, string>> = {
+    en: {
+        front: 'Front',
+        left: 'Left',
+        right: 'Right',
+    },
+    ne: {
+        front: 'सामुन्ने',
+        left: 'बायाँ',
+        right: 'दायाँ',
+    },
 };
 
 export const CapturedImages: React.FC<CapturedImagesProps> = ({
     images,
     onRemove,
     size = 'md',
+    locale = 'en',
 }) => {
     const sizeClasses = {
         sm: 'w-16 h-20',
@@ -104,7 +113,7 @@ export const CapturedImages: React.FC<CapturedImagesProps> = ({
                             className={`mt-2 text-sm font-medium ${captured ? 'text-green-600' : 'text-gray-500'
                                 }`}
                         >
-                            {ANGLE_LABELS[angle]}
+                            {ANGLE_LABELS[locale][angle]}
                         </span>
                     </div>
                 );

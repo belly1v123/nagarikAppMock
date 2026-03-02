@@ -13,6 +13,7 @@ interface ErrorScreenProps {
     onRetry?: () => void;
     onBack?: () => void;
     variant?: 'error' | 'warning' | 'duplicate';
+    locale?: 'en' | 'ne';
 }
 
 export const ErrorScreen: React.FC<ErrorScreenProps> = ({
@@ -22,7 +23,21 @@ export const ErrorScreen: React.FC<ErrorScreenProps> = ({
     onRetry,
     onBack,
     variant = 'error',
+    locale = 'en',
 }) => {
+    const t = locale === 'ne'
+        ? {
+            duplicateTitle: 'डुप्लिकेट रेकर्ड भेटियो',
+            duplicateText: 'मिल्दोजुल्दो विवरण भएको नागरिक रेकर्ड प्रणालीमा पहिले नै उपलब्ध छ। विवरण पुनः जाँच गर्नुहोस् वा आवश्यक परे सहयोगमा सम्पर्क गर्नुहोस्।',
+            back: 'फर्कनुहोस्',
+            retry: 'फेरि प्रयास गर्नुहोस्',
+        }
+        : {
+            duplicateTitle: 'Duplicate Record Detected',
+            duplicateText: 'A citizen with matching information already exists in the system. Please verify your details or contact support if you believe this is an error.',
+            back: 'Go Back',
+            retry: 'Try Again',
+        };
     const styles = {
         error: {
             iconBg: 'bg-red-100',
@@ -108,12 +123,10 @@ export const ErrorScreen: React.FC<ErrorScreenProps> = ({
                         </svg>
                         <div>
                             <p className="text-sm text-orange-800 font-medium">
-                                Duplicate Record Detected
+                                {t.duplicateTitle}
                             </p>
                             <p className="text-sm text-orange-700 mt-1">
-                                A citizen with matching information already exists in the system.
-                                Please verify your details or contact support if you believe this
-                                is an error.
+                                {t.duplicateText}
                             </p>
                         </div>
                     </div>
@@ -128,7 +141,7 @@ export const ErrorScreen: React.FC<ErrorScreenProps> = ({
                         className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg 
               hover:bg-gray-50 transition-colors font-medium"
                     >
-                        Go Back
+                        {t.back}
                     </button>
                 )}
                 {onRetry && (
@@ -137,7 +150,7 @@ export const ErrorScreen: React.FC<ErrorScreenProps> = ({
                         className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg 
               hover:bg-blue-700 transition-colors font-medium"
                     >
-                        Try Again
+                        {t.retry}
                     </button>
                 )}
             </div>

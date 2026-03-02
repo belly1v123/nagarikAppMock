@@ -181,11 +181,25 @@ export async function createApiKey(name: string): Promise<{ apiKey: ApiKey; rawK
             ...getAuthHeader(),
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({
+            name,
+            permissions: {
+                verify_identity: true,
+                check_liveness: true,
+                check_duplicate: true,
+                check_status: true,
+            },
+            rateLimit: 100,
+        }),
     });
 
-    const data = await handleResponse<{ success: boolean; data: unknown }>(response);
-    return data.data as { apiKey: ApiKey; rawKey: string };
+    const data = await handleResponse<{ success: boolean; apiKey?: ApiKey & { fullKey?: string }; error?: string; message?: string }>(response);
+
+    if (data.apiKey && data.apiKey.fullKey) {
+        return { apiKey: data.apiKey, rawKey: data.apiKey.fullKey };
+    }
+
+    throw new Error('API key creation failed');
 }
 
 export async function revokeApiKey(id: string): Promise<void> {

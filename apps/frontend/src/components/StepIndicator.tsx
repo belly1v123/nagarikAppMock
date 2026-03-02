@@ -157,8 +157,8 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
                                     )}
                                 </div>
                                 <p className={`${classes.label} mt-2 text-center font-medium ${status === 'current' ? 'text-blue-600' :
-                                        status === 'completed' ? 'text-green-600' :
-                                            'text-gray-500'
+                                    status === 'completed' ? 'text-green-600' :
+                                        'text-gray-500'
                                     }`}>
                                     {step.label}
                                 </p>
@@ -182,12 +182,19 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
 export const FaceCaptureSteps: React.FC<{
     currentAngle: 'front' | 'left' | 'right';
     completedAngles: ('front' | 'left' | 'right')[];
-}> = ({ currentAngle, completedAngles }) => {
-    const steps: Step[] = [
-        { id: 'front', label: 'Front', description: 'Look straight' },
-        { id: 'left', label: 'Left', description: 'Turn left' },
-        { id: 'right', label: 'Right', description: 'Turn right' },
-    ];
+    locale?: 'en' | 'ne';
+}> = ({ currentAngle, completedAngles, locale = 'en' }) => {
+    const steps: Step[] = locale === 'ne'
+        ? [
+            { id: 'front', label: 'सामुन्ने', description: 'सिधा हेर्नुहोस्' },
+            { id: 'left', label: 'बायाँ', description: 'बायाँ फर्कनुहोस्' },
+            { id: 'right', label: 'दायाँ', description: 'दायाँ फर्कनुहोस्' },
+        ]
+        : [
+            { id: 'front', label: 'Front', description: 'Look straight' },
+            { id: 'left', label: 'Left', description: 'Turn left' },
+            { id: 'right', label: 'Right', description: 'Turn right' },
+        ];
 
     const angleToIndex: Record<string, number> = {
         front: 0,

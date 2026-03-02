@@ -18,7 +18,7 @@ import {
     Loading,
     LoadingOverlay,
 } from '../components';
-import { useFaceApi, useCamera, useFaceCapture } from '../hooks';
+import { useFaceApi, useCamera, useFaceCapture, useLanguage } from '../hooks';
 import { registerCitizen, ApiError } from '../api';
 import { estimateHeadPose } from '../utils/poseDetection';
 import type {
@@ -68,7 +68,51 @@ const MIN_BLUR_SCORE = 85;
 const MIN_BRIGHTNESS = 55;
 const MAX_BRIGHTNESS = 205;
 
+const COPY = {
+    en: {
+        pageTitle: 'Citizen Registration',
+        pageSubtitle: 'Enter your personal information as per your citizenship certificate',
+        captureTitle: 'Face Capture',
+        captureSubtitle: 'Position your face in the oval and follow the instructions',
+        noFaceMessage: 'Position your face in the oval',
+        frontInstruction: 'Look straight at the camera',
+        leftInstruction: 'Turn your head slightly to the LEFT',
+        rightInstruction: 'Turn your head slightly to the RIGHT',
+        capturedImages: 'Captured Images',
+        cancel: 'Cancel and start over',
+        processing: 'Processing registration...',
+        processingSub: 'Verifying your information',
+        improveQuality: 'Improve frame quality',
+        positionToCapture: 'Position face to capture',
+        languageLabel: 'Language',
+        duplicateFound: 'Duplicate Found',
+        registrationFailed: 'Registration Failed',
+    },
+    ne: {
+        pageTitle: 'नागरिक दर्ता',
+        pageSubtitle: 'नागरिकता प्रमाणपत्र अनुसार आफ्नो व्यक्तिगत विवरण भर्नुहोस्',
+        captureTitle: 'अनुहार क्याप्चर',
+        captureSubtitle: 'अनुहारलाई ओभल भित्र राखेर निर्देशन पालना गर्नुहोस्',
+        noFaceMessage: 'अनुहारलाई ओभल भित्र राख्नुहोस्',
+        frontInstruction: 'क्यामेरातर्फ सिधा हेर्नुहोस्',
+        leftInstruction: 'टाउको हल्का बायाँ फर्काउनुहोस्',
+        rightInstruction: 'टाउको हल्का दायाँ फर्काउनुहोस्',
+        capturedImages: 'क्याप्चर गरिएका तस्बिरहरू',
+        cancel: 'रद्द गरेर फेरि सुरु गर्नुहोस्',
+        processing: 'दर्ता प्रक्रिया चलिरहेको छ...',
+        processingSub: 'तपाईंको जानकारी प्रमाणीकरण हुँदैछ',
+        improveQuality: 'फ्रेमको गुणस्तर सुधार्नुहोस्',
+        positionToCapture: 'क्याप्चरका लागि अनुहार मिलाउनुहोस्',
+        languageLabel: 'भाषा',
+        duplicateFound: 'डुप्लिकेट भेटियो',
+        registrationFailed: 'दर्ता असफल भयो',
+    },
+} as const;
+
 export const RegistrationPage: React.FC = () => {
+    const { language, setLanguage } = useLanguage();
+    const t = COPY[language];
+
     // Face API setup
     const { modelsLoaded: isFaceApiLoaded, loading: isFaceApiLoading, error: faceApiError, detectFace } = useFaceApi();
 
@@ -248,41 +292,79 @@ export const RegistrationPage: React.FC = () => {
         const lightingOk = brightness >= MIN_BRIGHTNESS && brightness <= MAX_BRIGHTNESS;
         const blurOk = blurScore >= MIN_BLUR_SCORE;
         if (!confidenceOk) {
-            return { isReady: false, reason: 'Face confidence too low. Move closer and keep still.', blurScore, brightness };
+            return {
+                isReady: false,
+                reason: language === 'ne'
+                    ? 'अनुहार पहिचान विश्वसनीय छैन। अलि नजिक आउनुहोस् र स्थिर बस्नुहोस्।'
+                    : 'Face confidence too low. Move closer and keep still.',
+                blurScore,
+                brightness,
+            };
         }
         if (!lightingOk) {
             return {
                 isReady: false,
                 reason: brightness < MIN_BRIGHTNESS
-                    ? 'Lighting is too low. Move to brighter light.'
-                    : 'Lighting is too harsh. Reduce direct light/glare.',
+                    ? (language === 'ne' ? 'प्रकाश कम छ। उज्यालो ठाउँमा जानुहोस्।' : 'Lighting is too low. Move to brighter light.')
+                    : (language === 'ne' ? 'प्रकाश धेरै चर्को छ। सिधा चमक कम गर्नुहोस्।' : 'Lighting is too harsh. Reduce direct light/glare.'),
                 blurScore,
                 brightness,
             };
         }
         if (!blurOk) {
-            return { isReady: false, reason: 'Image appears blurry. Hold device steady and avoid motion.', blurScore, brightness };
+            return {
+                isReady: false,
+                reason: language === 'ne'
+                    ? 'तस्बिर धमिलो छ। मोबाइल स्थिर राख्नुहोस्।'
+                    : 'Image appears blurry. Hold device steady and avoid motion.',
+                blurScore,
+                brightness,
+            };
         }
         if (!positionOk) {
-            return { isReady: false, reason: 'Face is not centered or size is not correct in frame.', blurScore, brightness };
+            return {
+                isReady: false,
+                reason: language === 'ne'
+                    ? 'अनुहार फ्रेमको बीचमा वा उपयुक्त आकारमा छैन।'
+                    : 'Face is not centered or size is not correct in frame.',
+                blurScore,
+                brightness,
+            };
         }
         if (!angleOk) {
             if (angle === 'front') {
-                return { isReady: false, reason: 'Look straight at the camera for front capture.', blurScore, brightness };
+                return {
+                    isReady: false,
+                    reason: language === 'ne'
+                        ? 'सामुन्ने क्याप्चरका लागि सिधा क्यामेरातर्फ हेर्नुहोस्।'
+                        : 'Look straight at the camera for front capture.',
+                    blurScore,
+                    brightness,
+                };
             }
             if (angle === 'left') {
-                return { isReady: false, reason: 'Turn your head slightly to the LEFT.', blurScore, brightness };
+                return {
+                    isReady: false,
+                    reason: language === 'ne' ? 'टाउको हल्का बायाँ फर्काउनुहोस्।' : 'Turn your head slightly to the LEFT.',
+                    blurScore,
+                    brightness,
+                };
             }
-            return { isReady: false, reason: 'Turn your head slightly to the RIGHT.', blurScore, brightness };
+            return {
+                isReady: false,
+                reason: language === 'ne' ? 'टाउको हल्का दायाँ फर्काउनुहोस्।' : 'Turn your head slightly to the RIGHT.',
+                blurScore,
+                brightness,
+            };
         }
 
         return {
             isReady: true,
-            reason: 'Good position. Hold still for capture.',
+            reason: language === 'ne' ? 'स्थिति राम्रो छ। क्याप्चरका लागि स्थिर रहनुहोस्।' : 'Good position. Hold still for capture.',
             blurScore,
             brightness,
         };
-    }, [computeBlurScore, computeBrightness, videoRef]);
+    }, [computeBlurScore, computeBrightness, videoRef, language]);
 
     // Face detection loop
     useEffect(() => {
@@ -369,7 +451,7 @@ export const RegistrationPage: React.FC = () => {
                         confidence: 0,
                         nosePosition: null,
                         isCaptureReady: false,
-                        qualityMessage: 'Position your face in the oval',
+                        qualityMessage: t.noFaceMessage,
                         blurScore: 0,
                         brightness: 0,
                     });
@@ -445,15 +527,15 @@ export const RegistrationPage: React.FC = () => {
             console.error('Registration error:', err);
 
             let errorState: { title: string; message: string; variant: 'error' | 'warning' | 'duplicate' } = {
-                title: 'Registration Failed',
-                message: 'An unexpected error occurred. Please try again.',
+                title: t.registrationFailed,
+                message: language === 'ne' ? 'अप्रत्याशित समस्या भयो। फेरि प्रयास गर्नुहोस्।' : 'An unexpected error occurred. Please try again.',
                 variant: 'error',
             };
 
             if (err instanceof ApiError) {
                 if (err.statusCode === 409) {
                     errorState = {
-                        title: 'Duplicate Found',
+                        title: t.duplicateFound,
                         message: err.message,
                         variant: 'duplicate',
                     };
@@ -529,7 +611,9 @@ export const RegistrationPage: React.FC = () => {
                     }
                 }
             } else {
-                alert('No face detected. Please position your face in the frame and try again.');
+                alert(language === 'ne'
+                    ? 'अनुहार पहिचान भएन। कृपया फ्रेममा अनुहार मिलाएर फेरि प्रयास गर्नुहोस्।'
+                    : 'No face detected. Please position your face in the frame and try again.');
             }
         } catch (err) {
             console.error('Manual capture error:', err);
@@ -546,8 +630,8 @@ export const RegistrationPage: React.FC = () => {
         if (isFaceApiLoading) {
             return (
                 <Loading
-                    message="Loading face detection models..."
-                    subMessage="This may take a moment"
+                    message={language === 'ne' ? 'अनुहार पहिचान मोडेल लोड हुँदैछ...' : 'Loading face detection models...'}
+                    subMessage={language === 'ne' ? 'केही समय लाग्न सक्छ' : 'This may take a moment'}
                     size="lg"
                 />
             );
@@ -556,9 +640,10 @@ export const RegistrationPage: React.FC = () => {
         if (faceApiError) {
             return (
                 <ErrorScreen
-                    title="Initialization Error"
+                    title={language === 'ne' ? 'सुरुआती त्रुटि' : 'Initialization Error'}
                     message={faceApiError}
                     onRetry={() => window.location.reload()}
+                    locale={language}
                 />
             );
         }
@@ -569,10 +654,10 @@ export const RegistrationPage: React.FC = () => {
                     <div className="max-w-xl mx-auto">
                         <div className="mb-8 text-center">
                             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                                Citizen Registration
+                                {t.pageTitle}
                             </h1>
                             <p className="text-gray-600">
-                                Enter your personal information as per your citizenship certificate
+                                {t.pageSubtitle}
                             </p>
                         </div>
                         <CitizenForm onSubmit={handleFormSubmit} />
@@ -584,10 +669,10 @@ export const RegistrationPage: React.FC = () => {
                     <div className="max-w-3xl mx-auto">
                         <div className="mb-6 text-center">
                             <h2 className="text-xl font-bold text-gray-900 mb-2">
-                                Face Capture
+                                {t.captureTitle}
                             </h2>
                             <p className="text-gray-600">
-                                Position your face in the oval and follow the instructions
+                                {t.captureSubtitle}
                             </p>
                         </div>
 
@@ -595,6 +680,7 @@ export const RegistrationPage: React.FC = () => {
                             <FaceCaptureSteps
                                 currentAngle={currentAngle}
                                 completedAngles={completedAngles}
+                                locale={language}
                             />
                         </div>
 
@@ -622,17 +708,19 @@ export const RegistrationPage: React.FC = () => {
                                 className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                             >
                                 {detectionStatus.isFaceDetected
-                                    ? (detectionStatus.isCaptureReady ? `Capture ${currentAngle} view` : 'Improve frame quality')
-                                    : 'Position face to capture'}
+                                    ? (detectionStatus.isCaptureReady
+                                        ? (language === 'ne' ? `${currentAngle === 'front' ? 'सामुन्ने' : currentAngle === 'left' ? 'बायाँ' : 'दायाँ'} दृश्य क्याप्चर गर्नुहोस्` : `Capture ${currentAngle} view`)
+                                        : t.improveQuality)
+                                    : t.positionToCapture}
                             </button>
                         </div>
 
                         {/* Instructions */}
                         <div className="text-center mb-4">
                             <p className="text-sm text-gray-600">
-                                {currentAngle === 'front' && 'Look straight at the camera'}
-                                {currentAngle === 'left' && 'Turn your head slightly to the LEFT'}
-                                {currentAngle === 'right' && 'Turn your head slightly to the RIGHT'}
+                                {currentAngle === 'front' && t.frontInstruction}
+                                {currentAngle === 'left' && t.leftInstruction}
+                                {currentAngle === 'right' && t.rightInstruction}
                             </p>
                             {detectionStatus.isFaceDetected && (
                                 <>
@@ -640,7 +728,7 @@ export const RegistrationPage: React.FC = () => {
                                         {detectionStatus.qualityMessage}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                        Confidence: {Math.round(detectionStatus.confidence * 100)}% · Blur: {Math.round(detectionStatus.blurScore)} · Light: {Math.round(detectionStatus.brightness)}
+                                        {language === 'ne' ? 'विश्वसनीयता' : 'Confidence'}: {Math.round(detectionStatus.confidence * 100)}% · {language === 'ne' ? 'ब्लर' : 'Blur'}: {Math.round(detectionStatus.blurScore)} · {language === 'ne' ? 'प्रकाश' : 'Light'}: {Math.round(detectionStatus.brightness)}
                                     </p>
                                 </>
                             )}
@@ -648,13 +736,14 @@ export const RegistrationPage: React.FC = () => {
 
                         <div className="mt-6">
                             <p className="text-sm text-gray-500 text-center mb-3">
-                                Captured Images
+                                {t.capturedImages}
                             </p>
                             <CapturedImages
                                 images={state.capturedFaces.map((f) => ({
                                     angle: f.angle,
                                     imageData: f.imageData,
                                 }))}
+                                locale={language}
                             />
                         </div>
 
@@ -663,7 +752,7 @@ export const RegistrationPage: React.FC = () => {
                                 onClick={handleReset}
                                 className="text-gray-500 hover:text-gray-700 text-sm"
                             >
-                                Cancel and start over
+                                {t.cancel}
                             </button>
                         </div>
                     </div>
@@ -672,8 +761,8 @@ export const RegistrationPage: React.FC = () => {
             case 'processing':
                 return (
                     <Loading
-                        message="Processing registration..."
-                        subMessage="Verifying your information"
+                        message={t.processing}
+                        subMessage={t.processingSub}
                         size="lg"
                     />
                 );
@@ -686,6 +775,7 @@ export const RegistrationPage: React.FC = () => {
                         citizenshipNumber={state.result.citizenshipNumber}
                         isVoterEligible={state.result.isVoterEligible}
                         onReset={handleReset}
+                        locale={language}
                     />
                 ) : null;
 
@@ -697,6 +787,7 @@ export const RegistrationPage: React.FC = () => {
                         variant={state.error.variant}
                         onRetry={handleRetry}
                         onBack={handleReset}
+                        locale={language}
                     />
                 ) : null;
 
@@ -708,11 +799,28 @@ export const RegistrationPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50 py-8 px-4">
             <div className="container mx-auto">
+                <div className="max-w-3xl mx-auto mb-4 flex items-center justify-end gap-3">
+                    <span className="text-sm text-gray-500">{t.languageLabel}</span>
+                    <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden bg-white">
+                        <button
+                            onClick={() => setLanguage('en')}
+                            className={`px-3 py-1.5 text-sm font-medium ${language === 'en' ? 'bg-blue-600 text-white' : 'text-gray-700'}`}
+                        >
+                            EN
+                        </button>
+                        <button
+                            onClick={() => setLanguage('ne')}
+                            className={`px-3 py-1.5 text-sm font-medium ${language === 'ne' ? 'bg-blue-600 text-white' : 'text-gray-700'}`}
+                        >
+                            नेपाली
+                        </button>
+                    </div>
+                </div>
                 {renderContent()}
             </div>
             <LoadingOverlay
                 isVisible={isProcessing}
-                message="Processing..."
+                message={language === 'ne' ? 'प्रक्रिया चलिरहेको छ...' : 'Processing...'}
             />
         </div>
     );

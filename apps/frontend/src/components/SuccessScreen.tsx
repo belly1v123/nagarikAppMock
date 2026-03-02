@@ -12,6 +12,7 @@ interface SuccessScreenProps {
     citizenshipNumber: string;
     isVoterEligible: boolean;
     onReset?: () => void;
+    locale?: 'en' | 'ne';
 }
 
 export const SuccessScreen: React.FC<SuccessScreenProps> = ({
@@ -20,7 +21,35 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({
     citizenshipNumber,
     isVoterEligible,
     onReset,
+    locale = 'en',
 }) => {
+    const t = locale === 'ne'
+        ? {
+            title: 'दर्ता सफल भयो',
+            subtitle: 'तपाईंको नागरिक आईडी सफलतापूर्वक सिर्जना भयो।',
+            id: 'नागरिक आईडी',
+            name: 'पूरा नाम',
+            citizenship: 'नागरिकता नम्बर',
+            voter: 'मतदाता योग्यता',
+            eligible: 'योग्य',
+            notEligible: 'अयोग्य (१८ वर्ष मुनि)',
+            important: 'महत्वपूर्ण',
+            note: 'आफ्नो नागरिक आईडी सुरक्षित राख्नुहोस्। सरकारी सेवा तथा तेस्रो-पक्ष एपमा प्रमाणीकरणका लागि आवश्यक पर्छ।',
+            reset: 'अर्को नागरिक दर्ता गर्नुहोस्',
+        }
+        : {
+            title: 'Registration Successful!',
+            subtitle: 'Your Nagarik ID has been created successfully.',
+            id: 'Nagarik ID',
+            name: 'Full Name',
+            citizenship: 'Citizenship Number',
+            voter: 'Voter Eligibility',
+            eligible: 'Eligible',
+            notEligible: 'Not Eligible (Under 18)',
+            important: 'Important',
+            note: 'Save your Nagarik ID. You will need it for identity verification with government services and third-party applications.',
+            reset: 'Register Another Citizen',
+        };
     return (
         <div className="max-w-md mx-auto text-center py-8">
             {/* Success Icon */}
@@ -41,45 +70,45 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({
             </div>
 
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Registration Successful!
+                {t.title}
             </h2>
 
             <p className="text-gray-600 mb-6">
-                Your Nagarik ID has been created successfully.
+                {t.subtitle}
             </p>
 
             {/* Details Card */}
             <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
                 <div className="space-y-4">
                     <div>
-                        <p className="text-sm text-gray-500">Nagarik ID</p>
+                        <p className="text-sm text-gray-500">{t.id}</p>
                         <p className="font-mono text-lg font-medium text-blue-600">
                             {citizenId}
                         </p>
                     </div>
 
                     <div>
-                        <p className="text-sm text-gray-500">Full Name</p>
+                        <p className="text-sm text-gray-500">{t.name}</p>
                         <p className="font-medium text-gray-900">{fullName}</p>
                     </div>
 
                     <div>
-                        <p className="text-sm text-gray-500">Citizenship Number</p>
+                        <p className="text-sm text-gray-500">{t.citizenship}</p>
                         <p className="font-medium text-gray-900">{citizenshipNumber}</p>
                     </div>
 
                     <div>
-                        <p className="text-sm text-gray-500">Voter Eligibility</p>
+                        <p className="text-sm text-gray-500">{t.voter}</p>
                         <div className="flex items-center gap-2">
                             {isVoterEligible ? (
                                 <>
                                     <span className="w-2 h-2 bg-green-500 rounded-full" />
-                                    <span className="font-medium text-green-600">Eligible</span>
+                                    <span className="font-medium text-green-600">{t.eligible}</span>
                                 </>
                             ) : (
                                 <>
                                     <span className="w-2 h-2 bg-orange-500 rounded-full" />
-                                    <span className="font-medium text-orange-600">Not Eligible (Under 18)</span>
+                                    <span className="font-medium text-orange-600">{t.notEligible}</span>
                                 </>
                             )}
                         </div>
@@ -102,10 +131,9 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({
                         />
                     </svg>
                     <div>
-                        <p className="text-sm text-blue-800 font-medium">Important</p>
+                        <p className="text-sm text-blue-800 font-medium">{t.important}</p>
                         <p className="text-sm text-blue-700 mt-1">
-                            Save your Nagarik ID. You will need it for identity verification
-                            with government services and third-party applications.
+                            {t.note}
                         </p>
                     </div>
                 </div>
@@ -118,7 +146,7 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({
                     className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg 
             hover:bg-gray-200 transition-colors font-medium"
                 >
-                    Register Another Citizen
+                    {t.reset}
                 </button>
             )}
         </div>

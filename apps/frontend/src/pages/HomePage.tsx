@@ -1,125 +1,144 @@
 /**
  * Home Page
- * 
+ *
  * Landing page for Nagarik App with navigation to registration.
  */
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../hooks';
+
+const TEXT = {
+    en: {
+        appName: 'Nagarik App',
+        registerNow: 'Register Now',
+        titleTop: 'Nepal Digital Identity',
+        titleBottom: 'Verification Platform',
+        subtitle: 'Register your identity securely with face recognition technology. Enable seamless verification for government services and trusted third-party applications.',
+        startRegistration: 'Start Registration',
+        learnMore: 'Learn More',
+        secureTitle: 'Secure Identity',
+        secureDesc: 'Personal information is encrypted and protected with modern security controls.',
+        faceTitle: 'Face Recognition',
+        faceDesc: 'Three-angle capture improves identity confidence during registration and verification.',
+        govTitle: 'Public Services Ready',
+        govDesc: 'Supports identity checks for civic, financial, and government-facing workflows.',
+        footerBrand: 'Nagarik App',
+        footerNote: 'Nepal Digital Identity Platform',
+        essence: 'Nepal inspired digital experience',
+    },
+    ne: {
+        appName: 'नागरिक एप',
+        registerNow: 'अहिले दर्ता गर्नुहोस्',
+        titleTop: 'नेपाल डिजिटल परिचय',
+        titleBottom: 'प्रमाणीकरण प्लेटफर्म',
+        subtitle: 'अनुहार पहिचान प्रविधिबाट सुरक्षित रूपमा आफ्नो परिचय दर्ता गर्नुहोस्। सरकारी सेवा र विश्वसनीय तेस्रो-पक्ष एपहरूमा सहज प्रमाणीकरण सक्षम बनाउनुहोस्।',
+        startRegistration: 'दर्ता सुरु गर्नुहोस्',
+        learnMore: 'थप जानकारी',
+        secureTitle: 'सुरक्षित परिचय',
+        secureDesc: 'व्यक्तिगत विवरण आधुनिक सुरक्षा नियन्त्रणसँग सुरक्षित रूपमा संरक्षित हुन्छ।',
+        faceTitle: 'अनुहार प्रमाणीकरण',
+        faceDesc: 'तीन कोणबाट क्याप्चर गर्दा दर्ता र प्रमाणीकरणको विश्वसनीयता बढ्छ।',
+        govTitle: 'सार्वजनिक सेवा तयार',
+        govDesc: 'नागरिक, वित्तीय र सरकारी कार्यप्रवाहका लागि परिचय जाँचमा सहायक।',
+        footerBrand: 'नागरिक एप',
+        footerNote: 'नेपाल डिजिटल परिचय प्लेटफर्म',
+        essence: 'नेपाली शैलीको डिजिटल अनुभव',
+    },
+};
 
 export const HomePage: React.FC = () => {
+    const { language, setLanguage } = useLanguage();
+    const t = TEXT[language];
+
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-            {/* Header */}
-            <header className="bg-white shadow-sm">
-                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-red-50">
+            <header className="bg-white shadow-sm border-b border-blue-100">
+                <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-lg">N</span>
+                        <div>
+                            <span className="text-xl font-bold text-gray-900">{t.appName}</span>
+                            <p className="text-xs text-gray-500">{t.essence}</p>
                         </div>
-                        <span className="text-xl font-bold text-gray-900">Nagarik App</span>
                     </div>
-                    <nav>
+
+                    <div className="flex items-center gap-3">
+                        <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+                            <button
+                                onClick={() => setLanguage('en')}
+                                className={`px-3 py-1.5 text-sm font-medium ${language === 'en' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+                            >
+                                EN
+                            </button>
+                            <button
+                                onClick={() => setLanguage('ne')}
+                                className={`px-3 py-1.5 text-sm font-medium ${language === 'ne' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+                            >
+                                नेपाली
+                            </button>
+                        </div>
+
                         <Link
                             to="/register"
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
-                            Register Now
+                            {t.registerNow}
                         </Link>
-                    </nav>
+                    </div>
                 </div>
             </header>
 
-            {/* Hero Section */}
-            <main className="container mx-auto px-4 py-16">
-                <div className="max-w-4xl mx-auto text-center">
-                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                        Nepal Digital Identity
+            <main className="container mx-auto px-4 py-12 md:py-16">
+                <div className="max-w-5xl mx-auto text-center">
+                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                        {t.titleTop}
                         <br />
-                        <span className="text-blue-600">Verification Platform</span>
+                        <span className="text-blue-700">{t.titleBottom}</span>
                     </h1>
 
-                    <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                        Register your identity securely with face recognition technology.
-                        Enable seamless verification for government services and third-party applications.
+                    <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                        {t.subtitle}
                     </p>
 
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center mb-14">
                         <Link
                             to="/register"
-                            className="px-8 py-4 bg-blue-600 text-white text-lg font-medium rounded-lg 
-                hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                            className="px-8 py-4 bg-blue-600 text-white text-lg font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100"
                         >
-                            Start Registration
+                            {t.startRegistration}
                         </Link>
                         <a
                             href="#features"
-                            className="px-8 py-4 border-2 border-gray-300 text-gray-700 text-lg font-medium 
-                rounded-lg hover:border-gray-400 transition-colors"
+                            className="px-8 py-4 border-2 border-gray-300 text-gray-700 text-lg font-medium rounded-lg hover:border-gray-400 transition-colors"
                         >
-                            Learn More
+                            {t.learnMore}
                         </a>
                     </div>
 
-                    {/* Features */}
-                    <div id="features" className="grid md:grid-cols-3 gap-8 text-left">
-                        <div className="bg-white p-6 rounded-xl shadow-sm">
-                            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Secure Identity</h3>
-                            <p className="text-gray-600">
-                                Your personal information is encrypted and stored securely with AES-256 encryption.
-                            </p>
+                    <div id="features" className="grid md:grid-cols-3 gap-6 text-left">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-50">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.secureTitle}</h3>
+                            <p className="text-gray-600">{t.secureDesc}</p>
                         </div>
-
-                        <div className="bg-white p-6 rounded-xl shadow-sm">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Face Recognition</h3>
-                            <p className="text-gray-600">
-                                Advanced face detection captures 3 angles for accurate identity verification.
-                            </p>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-50">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.faceTitle}</h3>
+                            <p className="text-gray-600">{t.faceDesc}</p>
                         </div>
-
-                        <div className="bg-white p-6 rounded-xl shadow-sm">
-                            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                        d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Government Services</h3>
-                            <p className="text-gray-600">
-                                Seamlessly verify your identity for voting, banking, and government services.
-                            </p>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-50">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.govTitle}</h3>
+                            <p className="text-gray-600">{t.govDesc}</p>
                         </div>
                     </div>
                 </div>
             </main>
 
-            {/* Footer */}
             <footer className="bg-gray-900 text-white mt-16">
                 <div className="container mx-auto px-4 py-8">
                     <div className="flex flex-col md:flex-row justify-between items-center">
                         <div className="flex items-center gap-3 mb-4 md:mb-0">
-                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                                <span className="font-bold">N</span>
-                            </div>
-                            <span className="font-semibold">Nagarik App Mock Platform</span>
+                            <span className="font-semibold">{t.footerBrand}</span>
                         </div>
-                        <p className="text-gray-400 text-sm">
-                            A demonstration platform for citizen identity verification
-                        </p>
+                        <p className="text-gray-400 text-sm">{t.footerNote}</p>
                     </div>
                 </div>
             </footer>

@@ -29,10 +29,11 @@ const verifyIdentitySchema = z.object({
 // ═══════════════════════════════════════════════════════════════
 // POST /api/auth/verify-identity
 // Verify if a phone number exists in Nagarik database
-// Public endpoint for voting apps (no API key required)
+// Protected endpoint for voting apps (API key required)
 // ═══════════════════════════════════════════════════════════════
 router.post(
     '/verify-identity',
+    apiKeyAuth('verify_identity'),
     validate(verifyIdentitySchema),
     asyncHandler(async (req: Request, res: Response) => {
         const { phone_number, session_token } = req.body;

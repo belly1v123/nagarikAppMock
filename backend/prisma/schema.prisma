@@ -15,8 +15,12 @@ model CitizenRecord {
   id                    String    @id @default(uuid())
 
   // Personal Information (encrypted at rest)
+  // UNIQUENESS CONSTRAINTS: Each citizen is uniquely identified by:
+  // 1. Citizenship number (cannot register same citizenship twice)
+  // 2. Phone number (cannot register same phone twice)
+  // 3. Face descriptors (cannot register same face twice - checked via algorithm)
   fullName              String    // AES-256 encrypted
-  citizenshipNumber     String    @unique  // AES-256 encrypted
+  citizenshipNumber     String    @unique  // AES-256 encrypted - ONE-TO-ONE mapping
   citizenshipHash       String    @unique  // SHA256(citizenshipNumber + salt)
   dateOfBirth           String    // AES-256 encrypted (stored as string)
   gender                String
@@ -26,7 +30,7 @@ model CitizenRecord {
   address               String?
 
   // Contact
-  phoneNumber           String    @unique  // AES-256 encrypted
+  phoneNumber           String    @unique  // AES-256 encrypted - ONE-TO-ONE mapping
   phoneHash             String    @unique  // SHA256(phone + salt)
   email                 String?
 

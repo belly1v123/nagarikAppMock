@@ -90,12 +90,16 @@ router.get(
     adminAuth(),
     asyncHandler(async (_req: Request, res: Response) => {
         // Get various statistics
+        const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+
         const [
             totalCitizens,
             voterEligibleCount,
             activeCitizenCount,
             activeApiKeys,
             todayVerifications,
+            successfulMatches,
+            failedMatches,
             duplicatesBlocked,
         ] = await Promise.all([
             prisma.citizenRecord.count(),
@@ -104,9 +108,19 @@ router.get(
             prisma.apiKey.count({ where: { isActive: true } }),
             prisma.verificationLog.count({
                 where: {
-                    requestedAt: {
-                        gte: new Date(new Date().setHours(0, 0, 0, 0)),
-                    },
+                    requestedAt: { gte: todayStart },
+                },
+            }),
+            prisma.verificationLog.count({
+                where: {
+                    requestedAt: { gte: todayStart },
+                    result: true,
+                },
+            }),
+            prisma.verificationLog.count({
+                where: {
+                    requestedAt: { gte: todayStart },
+                    result: false,
                 },
             }),
             prisma.auditLog.count({
@@ -139,9 +153,6 @@ router.get(
         }
 
         // Get verifications per hour (today)
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-
         const todayVerificationLogs = await prisma.verificationLog.findMany({
             where: {
                 requestedAt: { gte: todayStart },
@@ -176,8 +187,8 @@ router.get(
                 totalCitizens,
                 totalVerifications: todayVerifications,
                 verificationsByResult: {
-                    match: 0, // TODO: Calculate from verificationLog
-                    noMatch: 0,
+                    match: successfulMatches,
+                    noMatch: failedMatches,
                     error: 0,
                 },
                 recentRegistrations: activeCitizenCount,
